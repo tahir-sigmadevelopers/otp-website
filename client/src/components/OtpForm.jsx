@@ -122,7 +122,7 @@ const OtpForm = ({ phoneNumber, onVerificationSuccess, onBackToPhone }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes countdown
+  const [timeLeft, setTimeLeft] = useState(10); // 10 seconds countdown
   const inputRefs = useRef([]);
 
   useEffect(() => {
@@ -231,7 +231,7 @@ const OtpForm = ({ phoneNumber, onVerificationSuccess, onBackToPhone }) => {
     try {
       await sendOTP(phoneNumber);
       setLoading(false);
-      setTimeLeft(120); // Reset timer
+      setTimeLeft(10); // Reset timer to 10 seconds
       setError('OTP resent successfully!');
     } catch (err) {
       setLoading(false);
