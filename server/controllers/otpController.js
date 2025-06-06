@@ -99,3 +99,97 @@ exports.verifyOTP = async (req, res) => {
     });
   }
 };
+
+// Helper function to pause execution
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+// Send OTP in bulk
+exports.sendBulkOTP = async (req, res) => {
+  try {
+    const { phoneNumbers, totalSMS, pauseAfter, pauseSeconds } = req.body;
+    
+    // Validate input
+    if (!phoneNumbers || !Array.isArray(phoneNumbers) || phoneNumbers.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Phone numbers array is required' 
+      });
+    }
+    
+    if (!totalSMS || totalSMS <= 0 || !pauseAfter || pauseAfter <= 0 || !pauseSeconds || pauseSeconds <= 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Valid totalSMS, pauseAfter, and pauseSeconds are required' 
+      });
+    }
+    
+    // Start processing in the background and return response immediately
+    res.status(202).json({ 
+      success: true, 
+      message: 'Bulk OTP sending started',
+      totalMessages: Math.min(totalSMS, phoneNumbers.length)
+    });
+    
+    // Process in the background
+    (async () => {
+      console.log(`Starting bulk OTP send: ${totalSMS} messages, pause after ${pauseAfter} for ${pauseSeconds} seconds`);
+      
+      let sentCount = 0;
+      let batchCount = 0;
+      
+      // Loop through phone numbers and send OTPs
+      for (let i = 0; i < Math.min(totalSMS, phoneNumbers.length); i++) {
+        const phoneNumber = phoneNumbers[i % phoneNumbers.length]; // Cycle through available numbers
+        
+        try {
+          // Generate new OTP
+          const otp = generateOTP();
+          
+          // Save OTP to database
+          await OTP.create({
+            phoneNumber,
+            otp,
+          });
+          
+          // Send OTP via Twilio
+          await twilioClient.messages.create({
+            body: `Your OTP verification code is: ${otp}. Valid for 5 minutes.`,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: phoneNumber,
+          });
+          
+          sentCount++;
+          batchCount++;
+          
+          console.log(`Sent OTP ${sentCount}/${totalSMS} to ${phoneNumber}`);
+          
+          // Check if we need to pause
+          if (batchCount >= pauseAfter && i < totalSMS - 1) {
+            console.log(`Pausing for ${pauseSeconds} seconds after sending ${batchCount} messages`);
+            await sleep(pauseSeconds * 1000);
+            batchCount = 0;
+          }
+          
+          // Small delay between individual messages to prevent rate limiting
+          await sleep(100);
+          
+        } catch (error) {
+          console.error(`Error sending OTP to ${phoneNumber}:`, error);
+          // Continue with next number even if one fails
+        }
+      }
+      
+      console.log(`Bulk OTP sending completed. Sent ${sentCount}/${totalSMS} messages successfully.`);
+    })();
+    
+  } catch (error) {
+    console.error('Error starting bulk OTP send:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to start bulk OTP sending', 
+      error: error.message 
+    });
+  }
+};

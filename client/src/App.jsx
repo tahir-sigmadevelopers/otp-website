@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import PhoneForm from './components/PhoneForm';
 import OtpForm from './components/OtpForm';
+import BulkSmsForm from './components/BulkSmsForm';
 
 // Add keyframes animations
 const keyframes = `
@@ -90,10 +91,31 @@ const styles = {
     backgroundColor: '#4f46e5',
     color: 'white',
   },
+  navContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginBottom: '1rem',
+  },
+  navButton: {
+    padding: '0.5rem 1rem',
+    margin: '0 0.5rem',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    borderRadius: '0.5rem',
+    cursor: 'pointer',
+    backgroundColor: '#f3f4f6',
+    color: '#4b5563',
+    border: 'none',
+    transition: 'all 0.2s ease',
+  },
+  navButtonActive: {
+    backgroundColor: '#4f46e5',
+    color: 'white',
+  },
 };
 
 function App() {
-  const [step, setStep] = useState('phone'); // 'phone', 'otp', 'success'
+  const [step, setStep] = useState('phone'); // 'phone', 'otp', 'success', 'admin'
   const [phoneNumber, setPhoneNumber] = useState('');
   
   // Add style tag with keyframes to the document head on component mount
@@ -119,10 +141,35 @@ function App() {
   const handleBackToPhone = () => {
     setStep('phone');
   };
+  
+  const goToAdmin = () => {
+    setStep('admin');
+  };
 
   return (
     <div style={styles.appContainer}>
       <div style={styles.cardContainer}>
+        <div style={styles.navContainer}>
+          <button 
+            style={{
+              ...styles.navButton,
+              ...(step === 'phone' || step === 'otp' || step === 'success' ? styles.navButtonActive : {})
+            }}
+            onClick={handleBackToPhone}
+          >
+            User
+          </button>
+          <button 
+            style={{
+              ...styles.navButton,
+              ...(step === 'admin' ? styles.navButtonActive : {})
+            }}
+            onClick={goToAdmin}
+          >
+            Admin
+          </button>
+        </div>
+        
         {step === 'phone' && (
           <PhoneForm onOtpSent={handleOtpSent} />
         )}
@@ -153,6 +200,10 @@ function App() {
               </button>
             </div>
           </div>
+        )}
+        
+        {step === 'admin' && (
+          <BulkSmsForm />
         )}
       </div>
     </div>

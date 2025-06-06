@@ -30,4 +30,23 @@ export const verifyOTP = async (phoneNumber, otp) => {
   }
 };
 
+// Send bulk OTPs
+export const sendBulkOTP = async (bulkData, progressCallback) => {
+  try {
+    const response = await api.post('/otp/bulk-send', bulkData, {
+      onUploadProgress: (progressEvent) => {
+        // This won't actually track the SMS sending progress, just the upload
+        // The actual progress will be tracked via server-sent events or polling
+        if (progressCallback) {
+          progressCallback(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+        }
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
 export default api; 
