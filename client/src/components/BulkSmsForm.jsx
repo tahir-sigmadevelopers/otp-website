@@ -10,6 +10,7 @@ const styles = {
     padding: '2rem',
     width: '100%',
     animation: 'fadeIn 0.5s ease-out',
+    paddingRight: '4rem',
   },
   title: {
     fontSize: '1.5rem',

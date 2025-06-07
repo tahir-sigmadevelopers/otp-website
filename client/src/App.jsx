@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import PhoneForm from './components/PhoneForm';
-import OtpForm from './components/OtpForm';
-import BulkSmsForm from './components/BulkSmsForm';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import UserPage from './pages/UserPage';
+import AdminPage from './pages/AdminPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 
 // Add keyframes animations
 const keyframes = `
@@ -35,7 +37,7 @@ const styles = {
   },
   cardContainer: {
     width: '100%',
-    maxWidth: '420px',
+    maxWidth: '800px',
   },
   card: {
     backgroundColor: '#ffffff',
@@ -115,9 +117,6 @@ const styles = {
 };
 
 function App() {
-  const [step, setStep] = useState('phone'); // 'phone', 'otp', 'success', 'admin'
-  const [phoneNumber, setPhoneNumber] = useState('');
-  
   // Add style tag with keyframes to the document head on component mount
   useEffect(() => {
     const styleTag = document.createElement('style');
@@ -129,84 +128,20 @@ function App() {
     };
   }, []);
 
-  const handleOtpSent = (phone) => {
-    setPhoneNumber(phone);
-    setStep('otp');
-  };
-
-  const handleVerificationSuccess = () => {
-    setStep('success');
-  };
-
-  const handleBackToPhone = () => {
-    setStep('phone');
-  };
-  
-  const goToAdmin = () => {
-    setStep('admin');
-  };
-
   return (
-    <div style={styles.appContainer}>
-      <div style={styles.cardContainer}>
-        <div style={styles.navContainer}>
-          <button 
-            style={{
-              ...styles.navButton,
-              ...(step === 'phone' || step === 'otp' || step === 'success' ? styles.navButtonActive : {})
-            }}
-            onClick={handleBackToPhone}
-          >
-            User
-          </button>
-          <button 
-            style={{
-              ...styles.navButton,
-              ...(step === 'admin' ? styles.navButtonActive : {})
-            }}
-            onClick={goToAdmin}
-          >
-            Admin
-          </button>
+    <BrowserRouter>
+      <div style={styles.appContainer}>
+        <div style={styles.cardContainer}>
+          <Navbar />
+          
+          <Routes>
+            <Route path="/" element={<UserPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+          </Routes>
         </div>
-        
-        {step === 'phone' && (
-          <PhoneForm onOtpSent={handleOtpSent} />
-        )}
-        
-        {step === 'otp' && (
-          <OtpForm
-            phoneNumber={phoneNumber}
-            onVerificationSuccess={handleVerificationSuccess}
-            onBackToPhone={handleBackToPhone}
-          />
-        )}
-        
-        {step === 'success' && (
-          <div style={styles.card}>
-            <div style={styles.textCenter}>
-              <div style={styles.successIcon}>
-                <svg style={styles.icon} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-              </div>
-              <h2 style={styles.title}>Verification Successful</h2>
-              <p style={styles.subtitle}>Your phone number has been verified successfully.</p>
-              <button
-                onClick={handleBackToPhone}
-                style={styles.button}
-              >
-                Start Over
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {step === 'admin' && (
-          <BulkSmsForm />
-        )}
       </div>
-    </div>
+    </BrowserRouter>
   );
 }
 

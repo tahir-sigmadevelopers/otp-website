@@ -8,6 +8,8 @@ const styles = {
     borderRadius: '0.75rem',
     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
     padding: '2rem',
+    paddingBottom: '3rem',
+    paddingRight: '4rem',
     width: '100%',
     animation: 'fadeIn 0.5s ease-out',
   },

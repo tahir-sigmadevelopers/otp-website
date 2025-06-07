@@ -1,4 +1,5 @@
 const OTP = require('../models/otp');
+const SMSLog = require('../models/smsLog');
 const twilio = require('twilio');
 require('dotenv').config();
 
@@ -39,12 +40,28 @@ exports.sendOTP = async (req, res) => {
       to: phoneNumber,
     });
     
+    // Log the successful SMS
+    await SMSLog.create({
+      phoneNumber,
+      status: 'sent',
+      messageType: 'otp'
+    });
+    
     res.status(200).json({ 
       success: true, 
       message: 'OTP sent successfully' 
     });
   } catch (error) {
     console.error('Error sending OTP:', error);
+    
+    // Log the failed SMS
+    await SMSLog.create({
+      phoneNumber: req.body.phoneNumber,
+      status: 'failed',
+      messageType: 'otp',
+      errorMessage: error.message
+    });
+    
     res.status(500).json({ 
       success: false, 
       message: 'Failed to send OTP', 
@@ -163,15 +180,22 @@ exports.sendBulkOTP = async (req, res) => {
               otp,
             });
             
-            // Send OTP via Twilio
-            await twilioClient.messages.create({
-              body: `Your OTP verification code is: ${otp}. Valid for 5 minutes.`,
-              from: process.env.TWILIO_PHONE_NUMBER,
-              to: phoneNumber,
-            });
-            
-            sentCount++;
-            batchCount++;
+                      // Send OTP via Twilio
+          await twilioClient.messages.create({
+            body: `Your OTP verification code is: ${otp}. Valid for 5 minutes.`,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: phoneNumber,
+          });
+          
+          // Log the successful SMS
+          await SMSLog.create({
+            phoneNumber,
+            status: 'sent',
+            messageType: 'bulk'
+          });
+          
+          sentCount++;
+          batchCount++;
             
             console.log(`Sent OTP ${sentCount}/${totalSMS} to ${phoneNumber}`);
             
@@ -185,10 +209,19 @@ exports.sendBulkOTP = async (req, res) => {
             // Small delay between individual messages to prevent rate limiting
             await sleep(100);
             
-          } catch (error) {
-            console.error(`Error sending OTP to ${phoneNumber}:`, error);
-            // Continue with next number even if one fails
-          }
+                  } catch (error) {
+          console.error(`Error sending OTP to ${phoneNumber}:`, error);
+          
+          // Log the failed SMS
+          await SMSLog.create({
+            phoneNumber,
+            status: 'failed',
+            messageType: 'bulk',
+            errorMessage: error.message
+          });
+          
+          // Continue with next number even if one fails
+        }
         }
         
         console.log(`Bulk OTP sending completed. Sent ${sentCount}/${totalSMS} messages successfully.`);

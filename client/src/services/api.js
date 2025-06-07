@@ -59,4 +59,24 @@ export const sendBulkOTP = async (bulkData, progressCallback) => {
   }
 };
 
+// Get SMS analytics
+export const getSMSAnalytics = async () => {
+  try {
+    const response = await api.get('/analytics/sms');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
+// Get daily SMS count
+export const getDailySMSCount = async () => {
+  try {
+    const response = await api.get('/analytics/sms/daily');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
 export default api; 
