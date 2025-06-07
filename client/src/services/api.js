@@ -33,6 +33,14 @@ export const verifyOTP = async (phoneNumber, otp) => {
 // Send bulk OTPs
 export const sendBulkOTP = async (bulkData, progressCallback) => {
   try {
+    console.log('Sending bulk OTP request with data:', bulkData);
+    
+    // Ensure phoneNumbers is correctly formatted as an array
+    if (bulkData.phoneNumbers && !Array.isArray(bulkData.phoneNumbers)) {
+      console.error('Phone numbers is not an array:', bulkData.phoneNumbers);
+      throw new Error('Phone numbers must be an array');
+    }
+    
     const response = await api.post('/otp/bulk-send', bulkData, {
       onUploadProgress: (progressEvent) => {
         // This won't actually track the SMS sending progress, just the upload
@@ -43,8 +51,10 @@ export const sendBulkOTP = async (bulkData, progressCallback) => {
       }
     });
     
+    console.log('Bulk OTP response:', response.data);
     return response.data;
   } catch (error) {
+    console.error('Error sending bulk OTP:', error);
     throw error.response?.data || error.message;
   }
 };

@@ -146,6 +146,8 @@ const BulkSmsForm = () => {
       setError('Please enter at least one valid phone number');
       return;
     }
+    
+    console.log('Parsed phone numbers:', numbers);
 
     setLoading(true);
     setError('');

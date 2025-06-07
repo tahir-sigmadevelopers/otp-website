@@ -110,6 +110,13 @@ exports.sendBulkOTP = async (req, res) => {
   try {
     const { phoneNumbers, totalSMS, pauseAfter, pauseSeconds } = req.body;
     
+    console.log('Received bulk OTP request:', { 
+      phoneNumbersCount: phoneNumbers?.length, 
+      totalSMS, 
+      pauseAfter, 
+      pauseSeconds 
+    });
+    
     // Validate input
     if (!phoneNumbers || !Array.isArray(phoneNumbers) || phoneNumbers.length === 0) {
       return res.status(400).json({ 
@@ -133,56 +140,62 @@ exports.sendBulkOTP = async (req, res) => {
     });
     
     // Process in the background
-    (async () => {
-      console.log(`Starting bulk OTP send: ${totalSMS} messages, pause after ${pauseAfter} for ${pauseSeconds} seconds`);
-      
-      let sentCount = 0;
-      let batchCount = 0;
-      
-      // Loop through phone numbers and send OTPs
-      for (let i = 0; i < Math.min(totalSMS, phoneNumbers.length); i++) {
-        const phoneNumber = phoneNumbers[i % phoneNumbers.length]; // Cycle through available numbers
+    setTimeout(async () => {
+      try {
+        console.log(`Starting bulk OTP send: ${totalSMS} messages, pause after ${pauseAfter} for ${pauseSeconds} seconds`);
+        console.log('Phone numbers to process:', phoneNumbers);
         
-        try {
-          // Generate new OTP
-          const otp = generateOTP();
+        let sentCount = 0;
+        let batchCount = 0;
+        
+        // Loop through phone numbers and send OTPs
+        for (let i = 0; i < Math.min(totalSMS, phoneNumbers.length); i++) {
+          const phoneNumber = phoneNumbers[i % phoneNumbers.length]; // Cycle through available numbers
           
-          // Save OTP to database
-          await OTP.create({
-            phoneNumber,
-            otp,
-          });
-          
-          // Send OTP via Twilio
-          await twilioClient.messages.create({
-            body: `Your OTP verification code is: ${otp}. Valid for 5 minutes.`,
-            from: process.env.TWILIO_PHONE_NUMBER,
-            to: phoneNumber,
-          });
-          
-          sentCount++;
-          batchCount++;
-          
-          console.log(`Sent OTP ${sentCount}/${totalSMS} to ${phoneNumber}`);
-          
-          // Check if we need to pause
-          if (batchCount >= pauseAfter && i < totalSMS - 1) {
-            console.log(`Pausing for ${pauseSeconds} seconds after sending ${batchCount} messages`);
-            await sleep(pauseSeconds * 1000);
-            batchCount = 0;
+          try {
+            // Generate new OTP
+            const otp = generateOTP();
+            console.log(`Generated OTP ${otp} for phone number ${phoneNumber}`);
+            
+            // Save OTP to database
+            await OTP.create({
+              phoneNumber,
+              otp,
+            });
+            
+            // Send OTP via Twilio
+            await twilioClient.messages.create({
+              body: `Your OTP verification code is: ${otp}. Valid for 5 minutes.`,
+              from: process.env.TWILIO_PHONE_NUMBER,
+              to: phoneNumber,
+            });
+            
+            sentCount++;
+            batchCount++;
+            
+            console.log(`Sent OTP ${sentCount}/${totalSMS} to ${phoneNumber}`);
+            
+            // Check if we need to pause
+            if (batchCount >= pauseAfter && i < totalSMS - 1) {
+              console.log(`Pausing for ${pauseSeconds} seconds after sending ${batchCount} messages`);
+              await sleep(pauseSeconds * 1000);
+              batchCount = 0;
+            }
+            
+            // Small delay between individual messages to prevent rate limiting
+            await sleep(100);
+            
+          } catch (error) {
+            console.error(`Error sending OTP to ${phoneNumber}:`, error);
+            // Continue with next number even if one fails
           }
-          
-          // Small delay between individual messages to prevent rate limiting
-          await sleep(100);
-          
-        } catch (error) {
-          console.error(`Error sending OTP to ${phoneNumber}:`, error);
-          // Continue with next number even if one fails
         }
+        
+        console.log(`Bulk OTP sending completed. Sent ${sentCount}/${totalSMS} messages successfully.`);
+      } catch (error) {
+        console.error('Error in background process:', error);
       }
-      
-      console.log(`Bulk OTP sending completed. Sent ${sentCount}/${totalSMS} messages successfully.`);
-    })();
+    }, 100);
     
   } catch (error) {
     console.error('Error starting bulk OTP send:', error);
